@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ─── ENUMS ───────────────────────────────────────────
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum AssetType {
+  STOCK
+  BOND
+  CRYPTO
+  MUTUAL_FUND
+  ETF
+  REAL_ESTATE
+  OTHER
+}
+
+enum NotificationType {
+  BUDGET_WARNING
+  BUDGET_EXCEEDED
+  GOAL_MILESTONE
+  WEEKLY_SUMMARY
+  SYSTEM
+}
+
+// ─── MODELS ──────────────────────────────────────────
+
+model User {
+  id               String           @id @default(uuid())
+  firebaseUid      String           @unique
+  email            String           @unique
+  displayName      String?
+  avatarUrl        String?
+  currency         String           @default("USD")
+  monthlyIncome    Decimal?         @db.Decimal(12, 2)
+  tier             SubscriptionTier @default(FREE)
+  stripeCustomerId String?          @unique
+  darkMode         Boolean          @default(false)
+  onboardingDone   Boolean          @default(false)
+  aiQueriesUsed    Int              @default(0)
+  aiQueriesResetAt DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  transactions      Transaction[]
+  categories        Category[]
+  budgets           Budget[]
+  goals             SavingsGoal[]
+  assets            Asset[]
+  advisorChats      AdvisorChat[]
+  notifications     Notification[]
+  notificationPrefs NotificationPref?
+
+  @@map("users")
+}
+
+model Category {
+  id        String  @id @default(uuid())
+  name      String
+  icon      String  @default("tag")
+  color     String  @default("#6366f1")
+  isDefault Boolean @default(false)
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  amount      Decimal         @db.Decimal(12, 2)
+  type        TransactionType
+  description String
+  date        DateTime        @db.Date
+  notes       String?
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id])
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  deletedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, categoryId])
+  @@map("transactions")
+}
+
+model Budget {
+  id          String   @id @default(uuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  spent       Decimal  @default(0) @db.Decimal(12, 2)
+  month       Int
+  year        Int
+  rollover    Boolean  @default(false)
+  rolloverAmt Decimal  @default(0) @db.Decimal(12, 2)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@map("budgets")
+}
+
+model SavingsGoal {
+  id            String    @id @default(uuid())
+  name          String
+  targetAmount  Decimal   @db.Decimal(12, 2)
+  currentAmount Decimal   @default(0) @db.Decimal(12, 2)
+  targetDate    DateTime? @db.Date
+  icon          String    @default("piggy-bank")
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("savings_goals")
+}
+
+model Asset {
+  id            String    @id @default(uuid())
+  name          String
+  type          AssetType
+  quantity      Decimal   @db.Decimal(18, 8)
+  purchasePrice Decimal   @db.Decimal(12, 2)
+  currentPrice  Decimal   @db.Decimal(12, 2)
+  purchaseDate  DateTime  @db.Date
+  notes         String?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("assets")
+}
+
+model AdvisorChat {
+  id        String           @id @default(uuid())
+  title     String?
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  messages  AdvisorMessage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@map("advisor_chats")
+}
+
+model AdvisorMessage {
+  id        String      @id @default(uuid())
+  role      String // "user" | "assistant"
+  content   String      @db.Text
+  chatId    String
+  chat      AdvisorChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@map("advisor_messages")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  metadata  Json?
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+model NotificationPref {
+  id             String  @id @default(uuid())
+  budgetAlerts   Boolean @default(true)
+  weeklySummary  Boolean @default(true)
+  goalMilestones Boolean @default(true)
+  emailEnabled   Boolean @default(true)
+  pushEnabled    Boolean @default(false)
+  userId         String  @unique
+  user           User    @relation(fields: [userId], references: [id])
+
+  @@map("notification_prefs")
+}

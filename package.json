@@ -1,0 +1,22 @@
+{
+  "name": "smartwallet",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "build": "cd server && npx prisma generate && cd ../client && npm run build",
+    "vercel-build": "cd server && npx prisma generate && npx prisma migrate deploy && cd ../client && npm run build",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.0.0"
+  }
+}
