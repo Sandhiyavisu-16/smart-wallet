@@ -9,7 +9,7 @@
     "build:client": "npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
     "build": "cd server && npx prisma generate && cd ../client && npm run build",
-    "vercel-build": "cd server && npx prisma generate && npx prisma migrate deploy && cd ../client && npm run build",
+    "vercel-build": "cd server && npx prisma generate && cd ../client && npm run build",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
