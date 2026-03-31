@@ -1,31 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install",
-  "buildCommand": "ls -la && cd server && npx prisma generate && cd ../client && npm run build",
+  "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
   "framework": null,
-  "functions": {
-    "api/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "api/cron/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/monthly-reset",
-      "schedule": "5 0 1 * *"
-    },
-    {
-      "path": "/api/cron/weekly-summary",
-      "schedule": "0 9 * * 1"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
